@@ -6,13 +6,12 @@
 	import '$lib/global.css';
 	import '@xterm/xterm/css/xterm.css'
 	import '@fortawesome/fontawesome-free/css/all.min.css'
-	import { networkInterface, startLogin } from '$lib/network.js'
 	import { cpuActivity, diskActivity, cpuPercentage, diskLatency } from '$lib/activities.js'
 	import { introMessage, errorMessage, unexpectedErrorMessage } from '$lib/messages.js'
-	import { displayConfig, handleToolImpl } from '$lib/anthropic.js'
 	import { tryPlausible } from '$lib/plausible.js'
 	import { initCommandExecutor } from '$lib/commandExecutor.js'
-	import { WVM_CLIENT_SCRIPT, WVM_PROXY_SCRIPT } from '$lib/rpc_scripts.js';
+	import { WVM_CLIENT_SCRIPT } from '$lib/rpc_scripts.js';
+	import { NET_GATEWAY_SCRIPT } from '$lib/net_gateway.js';
 
 	export let configObj = null;
 	export let processCallback = null;
@@ -33,6 +32,8 @@
 
 	// RPC State
 	let scriptsInstalled = false;
+	let scriptsInstalling = false;
+	let netBannerPrinted = false;
 	let fetchMarkerBuffer = "";
 
 	function writeData(buf, vt)
@@ -44,10 +45,9 @@
 			const str = new TextDecoder().decode(buf);
 
 			// Prompt Detection for Installer
-			if (!scriptsInstalled && (str.includes("user@") || str.includes("root@") || str.includes(":~$"))) {
+			if (!scriptsInstalled && !scriptsInstalling && (str.includes("user@") || str.includes("root@") || str.includes(":~$"))) {
 				console.log("[WebVM] Prompt detected. Installing scripts...");
 				installRPCScripts();
-				scriptsInstalled = true;
 			}
 
 			// Fetch Interceptor - robust to marker split across output chunks.
@@ -58,34 +58,71 @@
 			}
 
 			while (true) {
-				const startIdx = fetchMarkerBuffer.indexOf("__FETCH__");
-				if (startIdx === -1) break;
+				const startText = fetchMarkerBuffer.indexOf("__FETCH__");
+				const startB64 = fetchMarkerBuffer.indexOf("__FETCH_B64__");
+				const startHead = fetchMarkerBuffer.indexOf("__FETCH_HEAD__");
+				if (startText === -1 && startB64 === -1 && startHead === -1) break;
 
-				const endIdx = fetchMarkerBuffer.indexOf("__ENDFETCH__", startIdx);
+				let isB64 = false;
+				let startIdx = startText;
+				let endMarker = "__ENDFETCH__";
+				let startMarker = "__FETCH__";
+				let method = 'GET';
+				let returnHeadersOnly = false;
+				if (startHead !== -1 && (startText === -1 || startHead < startText) && (startB64 === -1 || startHead < startB64)) {
+					startIdx = startHead;
+					startMarker = "__FETCH_HEAD__";
+					endMarker = "__ENDFETCH_HEAD__";
+					method = 'HEAD';
+					returnHeadersOnly = true;
+				} else if (startB64 !== -1 && (startText === -1 || startB64 < startText)) {
+					isB64 = true;
+					startIdx = startB64;
+					startMarker = "__FETCH_B64__";
+					endMarker = "__ENDFETCH_B64__";
+				}
+
+				const endIdx = fetchMarkerBuffer.indexOf(endMarker, startIdx);
 				if (endIdx === -1) break;
 
-				const url = fetchMarkerBuffer.slice(startIdx + "__FETCH__".length, endIdx);
-				console.log("[WebVM] Intercepted fetch request:", url);
-				handleFetch(url);
+				const url = fetchMarkerBuffer.slice(startIdx + startMarker.length, endIdx);
+				console.log("[WebVM] Intercepted fetch request:", url, isB64 ? "(b64)" : (method === 'HEAD' ? "(head)" : "(text)"));
+				handleFetch(url, { responseType: isB64 ? 'arrayBuffer' : 'text', method, returnHeadersOnly });
 
-				fetchMarkerBuffer = fetchMarkerBuffer.slice(endIdx + "__ENDFETCH__".length);
+				fetchMarkerBuffer = fetchMarkerBuffer.slice(endIdx + endMarker.length);
 			}
 		} catch (e) {}
 
 		term.write(new Uint8Array(buf));
 	}
 
-	async function handleFetch(url) {
+	async function handleFetch(url, opts = {}) {
 		try {
 			const apiKey = localStorage.getItem('webvm-api-key') || 'your-secret-api-key-here';
 			const res = await fetch(`/api/gateway?api_key=${encodeURIComponent(apiKey)}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ url: url, method: 'GET' })
+				body: JSON.stringify({ url: url, method: opts.method || 'GET', responseType: opts.responseType || 'text' })
 			});
 			const data = await res.json();
-			
-			// Send response directly - no encoding
+
+			if (opts.responseType === 'arrayBuffer') {
+				const content = data.data_b64 || data.error || "";
+				term.input(content + "__ENDRESPONSE__\n");
+				return;
+			}
+
+			if (opts.returnHeadersOnly) {
+				const headers = data.headers && typeof data.headers === 'object' ? data.headers : {};
+				let out = `${data.status || ''} ${data.statusText || ''}`.trim() + "\n";
+				for (const [k, v] of Object.entries(headers)) {
+					out += `${k}: ${v}\n`;
+				}
+				term.input(out + "__ENDRESPONSE__\n");
+				return;
+			}
+
+			// Send response directly - text mode
 			const content = data.data || data.error || "Error fetching URL";
 			term.input(content + "__ENDRESPONSE__\n");
 		} catch (e) {
@@ -94,24 +131,36 @@
 		}
 	}
 
-	function installRPCScripts() {
-		// Simple script - just writes the Python file line by line
-		const lines = WVM_CLIENT_SCRIPT.split('\n');
-		let cmd = "cat > /tmp/wvm_client.py << 'ENDOFSCRIPT'\n";
-		cmd += WVM_CLIENT_SCRIPT;
-		cmd += "\nENDOFSCRIPT";
+	async function installRPCScripts() {
+		if (!cx) return;
+		if (scriptsInstalled || scriptsInstalling) return;
+		scriptsInstalling = true;
 		
-		setTimeout(() => {
-			term.input(cmd + "\n");
-		}, 1000);
-
-		setTimeout(() => {
-			term.input("chmod +x /tmp/wvm_client.py\n");
-			term.input("alias curl='python3 /tmp/wvm_client.py'\n");
-			term.input("alias wget='python3 /tmp/wvm_client.py'\n");
-			term.input("clear\n");
-			term.input("echo 'Network ready. Use: curl <url>'\n");
-		}, 5000);
+		try {
+			// Create unified net gateway script
+			const netB64 = btoa(NET_GATEWAY_SCRIPT);
+			await cx.run('/bin/bash', ['-c', `echo "${netB64}" | base64 -d > /tmp/net && chmod +x /tmp/net`]);
+			
+			if (!netBannerPrinted) {
+				netBannerPrinted = true;
+				term.write('\r\n========================================\r\n');
+				term.write('Network ready! Use these commands:\r\n');
+				term.write('  /tmp/net curl [-o out] <url>\r\n');
+				term.write('  /tmp/net wget [-O out] <url>\r\n');
+				term.write('  /tmp/net curl -I <url>\r\n');
+				term.write('\r\nTo make it permanent as root:\r\n');
+				term.write('  su (password: password)\r\n');
+				term.write('  cp /tmp/net /bin/net\r\n');
+				term.write('  Then use: net curl <url>\r\n');
+				term.write('========================================\r\n');
+			}
+			scriptsInstalled = true;
+		} catch (e) {
+			console.error('Failed to install network script:', e);
+			term.write('\r\nWarning: Network tools installation failed\r\n');
+		} finally {
+			scriptsInstalling = false;
+		}
 	}
 
 	function readData(str)
@@ -228,7 +277,6 @@
 			screenshotMult = Math.min(screenshotMult, maxHeight / internalHeight);
 		var screenshotWidth = Math.floor(internalWidth * screenshotMult);
 		var screenshotHeight = Math.floor(internalHeight * screenshotMult);
-		displayConfig.set({width: screenshotWidth, height: screenshotHeight, mouseMult: internalMult * screenshotMult});
 	}
 	var curInnerWidth = 0;
 	var curInnerHeight = 0;
@@ -340,7 +388,7 @@
 		];
 		try
 		{
-			const newCx = await CheerpX.Linux.create({mounts: mountPoints, networkInterface: networkInterface});
+			const newCx = await CheerpX.Linux.create({mounts: mountPoints});
 			cx = newCx;
 		}
 		catch(e)
@@ -357,6 +405,8 @@
 		cxReadFunc = cx.setCustomConsole(writeData, term.cols, term.rows);
 		const apiKey = localStorage.getItem('webvm-api-key') || 'your-secret-api-key-here';
 		initCommandExecutor(term, apiKey);
+		// Install network scripts using cx.run for reliability
+		installRPCScripts();
 		const display = document.getElementById("display");
 		if(display)
 		{
@@ -369,22 +419,12 @@
 		}
 	}
 	onMount(initTerminal);
-	async function handleConnect()
-	{
-		const w = window.open("login.html", "_blank");
-		cx.networkLogin();
-		w.location.href = await startLogin();
-	}
 	async function handleReset()
 	{
 		if(blockCache == null)
 			return;
 		await blockCache.reset();
 		location.reload();
-	}
-	async function handleTool(tool)
-	{
-		return await handleToolImpl(tool, term);
 	}
 	async function handleSidebarPinChange(event)
 	{
@@ -397,7 +437,7 @@
 <main class="relative w-full h-full">
 	<Nav />
 	<div class="absolute top-10 bottom-0 left-0 right-0">
-		<SideBar {cx} on:connect={handleConnect} on:reset={handleReset} handleTool={!configObj.needsDisplay || curVT == 7 ? handleTool : null} on:sidebarPinChange={handleSidebarPinChange}>
+		<SideBar {cx} on:reset={handleReset} on:sidebarPinChange={handleSidebarPinChange}>
 			<slot></slot>
 		</SideBar>
 		{#if configObj.needsDisplay}

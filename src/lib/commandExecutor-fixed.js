@@ -96,7 +96,6 @@ async function executeCommand(commandId, cmd) {
 	const outputPromise = new Promise((resolve) => {
 		let checkCount = 0;
 		const maxChecks = 600; // 60 seconds
-		const startTime = Date.now();
 
 		const check = () => {
 			const curLength = buffer.length;

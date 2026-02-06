@@ -185,8 +185,8 @@ export async function POST({ request, url }) {
 
     if (shouldWait) {
         const startTime = Date.now();
-        // Wait up to 30 seconds for completion
-        while (Date.now() - startTime < 30000) {
+        // Wait up to 60 seconds for completion
+        while (Date.now() - startTime < 60000) {
             const currentCmd = commandQueue.get(newCommandId);
             if (currentCmd.status === 'completed' || currentCmd.status === 'error') {
                 return json({

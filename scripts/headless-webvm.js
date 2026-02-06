@@ -135,8 +135,9 @@ async function main() {
     console.log('  Commands sent to the API will be executed automatically.');
     console.log('');
     console.log('  Test with:');
-    console.log('    curl -X POST "http://localhost:5173/api?api_key=your-secret-api-key-here" \\');
-    console.log('      -H "Content-Type: application/json" -d \'{"cmd":"whoami"}\'');
+    const testUrl = WEBVM_URL.replace(/\/$/, '');
+    console.log(`    curl -X POST "${testUrl}/api?api_key=your-secret-api-key-here" \\`);
+    console.log(`      -H "Content-Type: application/json" -d '{"cmd":"whoami"}'`);
     console.log('');
     console.log('  Press Ctrl+C to stop.');
     console.log('');

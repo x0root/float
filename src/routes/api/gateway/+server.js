@@ -12,10 +12,16 @@ import { env } from '$env/dynamic/private';
 export async function POST({ request, url }) {
     const authKey = url.searchParams.get('api_key') || request.headers.get('x-api-key');
 
-    // Security: Validate API Key (reusing the env var or matching query)
-    // For now, we accept the key passed in params to match existing flows
+    if (!env.API_KEY) {
+        return json({ error: 'Server configuration error: API_KEY not configured' }, { status: 500 });
+    }
+
     if (!authKey) {
         return json({ error: 'Unauthorized: Missing API Key' }, { status: 401 });
+    }
+
+    if (authKey !== env.API_KEY) {
+        return json({ error: 'Unauthorized: Invalid API Key' }, { status: 401 });
     }
 
     try {
@@ -28,9 +34,12 @@ export async function POST({ request, url }) {
 
         console.log(`[Gateway] Proxying request to: ${targetUrl}`);
 
+        const responseType = payload.responseType === 'arrayBuffer' ? 'arrayBuffer' : 'text';
+
         // Add timeout for faster response
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        const timeoutMs = responseType === 'arrayBuffer' ? 60000 : 30000;
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
         // Perform the server-side fetch (Running on Vercel/Node)
         const method = (payload.method || 'GET').toUpperCase();
@@ -53,12 +62,24 @@ export async function POST({ request, url }) {
 
         clearTimeout(timeoutId);
 
-        // Read response body
+        if (responseType === 'arrayBuffer') {
+            const buf = Buffer.from(await response.arrayBuffer());
+            const b64 = buf.toString('base64');
+            return json({
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers),
+                data_b64: b64
+            });
+        }
+
+        // Read response body as text
         let data = await response.text();
 
-        // Truncate large responses for faster terminal output
-        const MAX_LENGTH = 5000;
-        if (data.length > MAX_LENGTH) {
+        // Truncate large responses for faster terminal output (can be disabled by caller)
+        const shouldTruncate = payload.truncate !== false;
+        const MAX_LENGTH = Number.isFinite(payload.maxLength) ? payload.maxLength : 200000;
+        if (shouldTruncate && data.length > MAX_LENGTH) {
             data = data.substring(0, MAX_LENGTH) + "\n\n[...TRUNCATED - Response too large...]";
         }
 
@@ -66,7 +87,7 @@ export async function POST({ request, url }) {
             status: response.status,
             statusText: response.statusText,
             headers: Object.fromEntries(response.headers),
-            data: data
+            data
         });
 
     } catch (err) {

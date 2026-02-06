@@ -2,25 +2,21 @@
 	import { createEventDispatcher } from 'svelte';
 	import Icon from './Icon.svelte';
 	import InformationTab from './InformationTab.svelte';
-	import NetworkingTab from './NetworkingTab.svelte';
 	import CpuTab from './CpuTab.svelte';
 	import DiskTab from './DiskTab.svelte';
 	import FileManagerTab from './FileManagerTab.svelte';
-	import AnthropicTab from './AnthropicTab.svelte';
 	import PostsTab from './PostsTab.svelte';
 	import DiscordTab from './DiscordTab.svelte';
 	import GitHubTab from './GitHubTab.svelte';
 	import SmallButton from './SmallButton.svelte';
-		import { cpuActivity, diskActivity, aiActivity } from './activities.js';
-		export let cx = null;
+	import { cpuActivity, diskActivity } from './activities.js';
+	export let cx = null;
 	
 		const icons = [
 		{ icon: 'fas fa-info-circle', info: 'Information', activity: null },
-		{ icon: 'fas fa-wifi', info: 'Networking', activity: null },
 		{ icon: 'fas fa-microchip', info: 'CPU', activity: cpuActivity },
 		{ icon: 'fas fa-compact-disc', info: 'Disk', activity: diskActivity },
 		{ icon: 'fas fa-folder-open', info: 'Files', activity: null },
-		{ icon: 'fas fa-robot', info: 'ClaudeAI', activity: aiActivity },
 		null,
 		{ icon: 'fas fa-book-open', info: 'Posts', activity: null },
 		{ icon: 'fab fa-discord', info: 'Discord', activity: null },
@@ -105,16 +101,12 @@
 			<InformationTab>
 				<slot></slot>
 			</InformationTab>
-		{:else if activeInfo === 'Networking'}
-			<NetworkingTab on:connect/>
 		{:else if activeInfo === 'CPU'}
 			<CpuTab/>
 		{:else if activeInfo === 'Disk'}
 			<DiskTab on:reset/>
 		{:else if activeInfo === 'Files'}
 			<FileManagerTab {cx} />
-		{:else if activeInfo === 'ClaudeAI'}
-			<AnthropicTab handleTool={handleTool} />
 		{:else if activeInfo === 'Posts'}
 			<PostsTab/>
 		{:else if activeInfo === 'Discord'}
@@ -134,7 +126,7 @@
 			</div>
 			<hr class="border-t border-solid border-gray-300">
 			<div class="pt-1 pb-1">
-				<a href="https://leaningtech.com/" target="”_blank”">© 2022-2025 Leaning Technologies</a>
+				<a href="https://leaningtech.com/" target="_blank">2022-2025 Leaning Technologies</a>
 			</div>
 		</div>
 	</div>
