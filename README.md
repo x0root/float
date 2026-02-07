@@ -252,6 +252,34 @@ The gateway is a normal HTTP endpoint implemented in SvelteKit:
 
 The VM itself does not have a full network stack or DNS in the browser sandbox. Instead, the UI proxies web requests.
 
+#### How it works in this project (end-to-end)
+
+- **1) A VM-side helper emits markers**
+  - A small Python script is written into the VM as `/tmp/net` (see `src/lib/net_gateway.js`).
+  - When you run `/tmp/net curl https://example.com`, it does not open sockets.
+  - Instead it prints a marker to stdout like `__FETCH__https://example.com__ENDFETCH__` and waits for a response terminated by `__ENDRESPONSE__`.
+
+- **2) The browser UI intercepts those markers**
+  - The main VM UI component (`src/lib/WebVM.svelte`) scans the terminal output stream for these markers.
+  - When it finds one, it extracts the URL and calls `handleFetch(...)`.
+
+- **3) The UI calls the host gateway endpoint**
+  - `handleFetch(...)` performs a `fetch('/api/gateway?api_key=...')` POST with JSON `{ url, method, responseType }`.
+  - The API key is taken from `localStorage['webvm-api-key']` (or from `?api_key=...` which the UI seeds into localStorage).
+
+- **4) The server performs the real network request**
+  - The SvelteKit endpoint (`src/routes/api/gateway/+server.js`) validates the API key and runs `fetch(targetUrl)` from the host environment (Node).
+  - It returns the response as JSON:
+    - `data` for text
+    - `data_b64` for binary (base64)
+    - `headers/status/statusText` for HEAD/header-only mode
+
+- **5) The UI injects the response back into the VM session**
+  - The UI writes the returned data back into the VM’s stdin/terminal stream and appends `__ENDRESPONSE__`.
+  - The VM-side helper reads until it sees `__ENDRESPONSE__` and then prints/saves the content.
+
+This is intentionally a **URL-fetch bridge**, not a full TCP/UDP network stack.
+
 #### Marker protocol
 The WebVM terminal output is scanned for markers:
 
@@ -267,6 +295,20 @@ The UI injects the response back to the VM, terminated by:
 - This is **not** a general-purpose socket/network layer. It is a URL fetch bridge.
 - Large responses can be slow (especially binary/base64) and may hit timeouts.
 - Only the host can see the real network; the VM cannot directly resolve DNS.
+
+#### Relation to CheerpX networking customization
+CheerpX does have internal networking integration points, but they are not documented publicly yet.
+
+Float does **not** depend on undocumented CheerpX APIs for networking.
+
+Instead, this repo implements networking as an explicit, auditable proxy layer:
+
+- The VM requests a URL by printing markers
+- The UI forwards the request to a normal HTTP endpoint
+- The endpoint does the real network `fetch` and returns data
+- The UI injects the response back
+
+This keeps the approach portable across hosts (local Node, VPS) and avoids relying on internal CheerpX hooks.
 
 ---
 
