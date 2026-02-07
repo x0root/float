@@ -5,9 +5,6 @@
 	import CpuTab from './CpuTab.svelte';
 	import DiskTab from './DiskTab.svelte';
 	import FileManagerTab from './FileManagerTab.svelte';
-	import PostsTab from './PostsTab.svelte';
-	import DiscordTab from './DiscordTab.svelte';
-	import GitHubTab from './GitHubTab.svelte';
 	import SmallButton from './SmallButton.svelte';
 	import { cpuActivity, diskActivity } from './activities.js';
 	export let cx = null;
@@ -18,8 +15,6 @@
 		{ icon: 'fas fa-compact-disc', info: 'Disk', activity: diskActivity },
 		{ icon: 'fas fa-folder-open', info: 'Files', activity: null },
 		null,
-		{ icon: 'fas fa-book-open', info: 'Posts', activity: null },
-		{ icon: 'fab fa-discord', info: 'Discord', activity: null },
 		{ icon: 'fab fa-github', info: 'GitHub', activity: null },
 	];
 	let dispatch = createEventDispatcher();
@@ -49,6 +44,10 @@
 	}
 	// Toggles the info panel for the clicked icon.
 	function handleClick(icon) {
+		if (icon?.info === 'GitHub') {
+			window.open('https://github.com/x0root/float', '_blank', 'noreferrer');
+			return;
+		}
 		if(sideBarPinned)
 			return;
 		// Hides the panel if the icon is active. Otherwise, shows the panel with info.
@@ -107,14 +106,8 @@
 			<DiskTab on:reset/>
 		{:else if activeInfo === 'Files'}
 			<FileManagerTab {cx} />
-		{:else if activeInfo === 'Posts'}
-			<PostsTab/>
-		{:else if activeInfo === 'Discord'}
-			<DiscordTab/>
-		{:else if activeInfo === 'GitHub'}
-			<GitHubTab/>
 		{:else}
-			<p>TODO: {activeInfo}</p>
+			<p>Visit our <a href="https://github.com/x0root/float" target="_blank">github!</a></p>
 		{/if}
 
 		<div class="mt-auto text-sm text-gray-300">
