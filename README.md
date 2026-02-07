@@ -83,6 +83,13 @@ API_KEY=your-secret-api-key-here
 # Storage: WebSocket URL for the Debian disk image
 # Default: wss://disks.webvm.io/debian_large_20230522_5044875331.ext2
 DISK_SOURCE=wss://disks.webvm.io/debian_large_20230522_5044875331.ext2
+
+# Manager dashboard login (optional)
+MANAGER_USER=manager
+MANAGER_PASSWORD=change-me
+
+# Optional. If not set, the manager session token signing secret uses API_KEY.
+# MANAGER_SESSION_SECRET=...
 ```
 
 ### 3. Development Server
@@ -97,6 +104,43 @@ npm run dev
 # Auto-runs with `npm run dev` or separately:
 npm run headless
 ```
+
+---
+
+## Manager Dashboard (WebVM Instance Management)
+
+Float includes a manager dashboard that can spawn and control multiple independent WebVM instances.
+
+### What the manager does
+
+- **Create VM**: starts a dedicated `vite preview` server on its own port and a dedicated headless runner for background execution.
+- **Terminate**: stops the VM (kills both the per-VM preview server and the headless runner).
+- **Start**: starts a previously terminated VM again.
+- **Rename**: changes the displayed name.
+- **Delete**: removes the VM record from the manager list.
+
+### Access
+
+- **Dashboard**: `http://localhost:5173/manager`
+- **Login**: `http://localhost:5173/manager/login`
+
+The manager uses an HTTP-only cookie session. All manager API routes require being logged in.
+
+### Per-VM URLs and ports
+
+Each created VM has its own URL (example):
+
+- `http://localhost:48566/`
+
+The manager will show a clickable **Run at** link that passes `?api_key=...` so the VM UI can automatically configure the API key for gateway features.
+
+### Per-VM headless logs
+
+Each per-VM headless runner writes logs to:
+
+- `.webvm-logs/<vmId>.headless.log`
+
+This is the first place to check if commands are stuck or the runner fails to start.
 
 ---
 
@@ -117,6 +161,55 @@ curl -X POST "http://localhost:5173/api?api_key=YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"cmd":"python3 -c \"print(2+2)\""}'
 ```
+
+#### PowerShell example
+
+```powershell
+$params = @{
+    Uri         = "http://localhost:48566/api?api_key=YOUR_KEY"
+    Method      = "POST"
+    ContentType = "application/json"
+    Body        = (@{ cmd = 'python3 -c "print(2*15)"' } | ConvertTo-Json)
+}
+
+Invoke-RestMethod @params
+```
+
+### Command API (`/api`)
+
+The command API is a queue:
+
+- **POST `/api?api_key=...`**
+  - Send `{ "cmd": "..." }` to enqueue a command.
+  - By default it waits up to 60 seconds for the headless runner to complete the command.
+  - If it times out waiting, it returns `status: pending` and you can poll.
+
+- **GET `/api?action=pending&api_key=...`**
+  - Used by the headless runner (CommandExecutor) to fetch the next command.
+
+- **GET `/api?commandId=...&api_key=...`**
+  - Poll the result of a command.
+
+### HTTP Gateway (`/api/gateway`)
+
+- **POST `/api/gateway?api_key=...`**
+  - Used by the VM UI to proxy URL fetches from inside the VM.
+  - This enables `curl`, `wget`, and related workflows via the marker protocol described below.
+
+### Manager API (`/api/manager/webvm`)
+
+- **GET `/api/manager/webvm`**
+  - Returns the current VM list (plus the API key for generating "Open" links).
+
+- **POST `/api/manager/webvm`**
+  - Body contains `action`:
+    - `create`: `{ action, name, port?, diskSource? }`
+    - `terminate`: `{ action, id }`
+    - `start`: `{ action, id }`
+    - `rename`: `{ action, id, newName }`
+    - `delete`: `{ action, id }`
+
+The manager API requires being logged into the manager dashboard (cookie session).
 
 ### Internet Access from VM
 Run standard networking commands inside the VM:
@@ -233,3 +326,31 @@ Exact image build/export steps depend on your environment and hosting choice. Th
 ---
 
 Powered by [Leaning Technologies](https://leaningtech.com)
+
+---
+
+## Troubleshooting
+
+### VM API returns `pending` and never completes
+
+This means the per-VM headless runner is not executing queued commands.
+
+- Check the per-VM headless log:
+  - `.webvm-logs/<vmId>.headless.log`
+- Ensure the VM was created from the manager while running on a persistent Node process (not serverless).
+
+### Browser shows `ERR_UNSAFE_PORT`
+
+Some ports are blocked by browsers. If you pick a blocked port, the VM UI will not load.
+
+- Let the manager auto-select a port (leave Port empty)
+- Or choose a safe port (examples: `4173`, `5173`, `5637`, and other non-blocked ports)
+
+### Windows notes
+
+- Per-VM servers are started by invoking the Vite CLI via Node directly to avoid Windows `spawn` issues.
+- If a per-VM runner fails to start, inspect the `.webvm-logs` file for the error.
+
+### Serverless platforms (Vercel)
+
+VM creation/start is disabled on serverless platforms because they cannot spawn persistent child processes.

@@ -48,3 +48,50 @@
 [CommandExecutor] DEBUG Line 51: "documents  examples  hello"
 [CommandExecutor] DEBUG Line 52: "__WVM_END_cmd_1770436369580_6in0hjb0i__"
 [CommandExecutor] Result sent for: cmd_1770436369580_6in0hjb0i
+🚀 Starting Headless WebVM...
+   URL: http://localhost:48566
+   Mode: Headless
+
+📡 Navigating to WebVM...
+✅ Page loaded successfully
+🔑 API key configured
+⏳ Waiting for terminal to initialize...
+✅ Terminal element found
+⏳ Waiting for CheerpX VM to boot (this may take 30-60 seconds)...
+✅ VM appears to be ready (bash prompt detected)
+
+═══════════════════════════════════════════════════════════
+  🖥️  HEADLESS WEBVM IS RUNNING
+═══════════════════════════════════════════════════════════
+
+  The VM is now running in the background.
+  Commands sent to the API will be executed automatically.
+
+  Test with:
+    curl -X POST "http://localhost:48566/api?api_key=your-secret-api-key-herek" \
+      -H "Content-Type: application/json" -d '{"cmd":"whoami"}'
+
+  Press Ctrl+C to stop.
+
+═══════════════════════════════════════════════════════════
+[CommandExecutor] Started polling for commands
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
