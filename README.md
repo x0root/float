@@ -75,7 +75,7 @@ With its container management API and Docker-inspired orchestration, Float lets 
 ### 1. Installation
 ```bash
 git clone https://github.com/x0root/float
-cd wvm-main
+cd float
 npm install
 ```
 
