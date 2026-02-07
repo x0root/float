@@ -13,6 +13,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 
 const WEBVM_URL = process.env.WEBVM_URL || 'http://localhost:5173';
 const HEADLESS = process.env.HEADLESS !== 'false';
@@ -42,6 +43,8 @@ function readDotEnvApiKey() {
 }
 
 const API_KEY = process.env.API_KEY || readDotEnvApiKey() || 'your-secret-api-key-here';
+const WEBVM_ID = process.env.WEBVM_ID || `webvm_${process.pid}_${crypto.randomBytes(4).toString('hex')}`;
+const WEBVM_NAME = process.env.WEBVM_NAME || 'WebVM';
 
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -71,6 +74,8 @@ async function main() {
     // Ensure CommandExecutor has the API key before any app scripts run
     await page.evaluateOnNewDocument((key) => {
         try {
+            // Per-tab marker: do not leak to normal user-opened tabs.
+            sessionStorage.setItem('webvm-headless', 'true');
             localStorage.setItem('webvm-api-key', key);
         } catch {
             // ignore
@@ -91,12 +96,22 @@ async function main() {
     });
 
     console.log('📡 Navigating to WebVM...');
+    const targetUrl = (() => {
+        try {
+            const u = new URL(WEBVM_URL);
+            u.searchParams.set('headless', '1');
+            return u.toString();
+        } catch {
+            // Fallback for non-absolute URLs
+            return WEBVM_URL.includes('?') ? `${WEBVM_URL}&headless=1` : `${WEBVM_URL}?headless=1`;
+        }
+    })();
 
     // Navigate with retry logic
     let loaded = false;
     for (let attempt = 1; attempt <= 3 && !loaded; attempt++) {
         try {
-            await page.goto(WEBVM_URL, {
+            await page.goto(targetUrl, {
                 waitUntil: 'domcontentloaded',
                 timeout: 60000
             });
@@ -119,6 +134,38 @@ async function main() {
     }
 
     console.log('🔑 API key configured');
+
+    async function agentHeartbeat() {
+        try {
+            const base = WEBVM_URL.replace(/\/$/, '');
+            const agentUrl = `${base}/api/manager/webvm/agent?api_key=${encodeURIComponent(API_KEY)}`;
+            const res = await fetch(agentUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: WEBVM_ID,
+                    name: WEBVM_NAME,
+                    runAt: base,
+                    api: `${base}/api`,
+                    meta: { headless: HEADLESS }
+                })
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok) return;
+            const commands = data?.commands || [];
+            if (commands.some((c) => c?.type === 'terminate')) {
+                console.log('[Headless] Terminate requested by manager');
+                await browser.close();
+                process.exit(0);
+            }
+        } catch {
+            // ignore
+        }
+    }
+
+    // Start heartbeating immediately (so /manager can see the instance even during boot)
+    await agentHeartbeat();
+    const agentInterval = setInterval(agentHeartbeat, 3000);
 
     // Wait for terminal with retry
     console.log('⏳ Waiting for terminal to initialize...');
@@ -188,7 +235,10 @@ async function main() {
             const url = page.url();
             if (!url.includes('localhost')) {
                 console.log('⚠️  Page navigated away, attempting to return...');
-                await page.goto(WEBVM_URL, { waitUntil: 'domcontentloaded' });
+                await page.goto(targetUrl, {
+                    waitUntil: 'domcontentloaded',
+                    timeout: 60000
+                });
             }
         } catch (e) {
             // Ignore errors in health check
@@ -197,6 +247,7 @@ async function main() {
 
     process.on('SIGINT', async () => {
         console.log('\n👋 Shutting down headless WebVM...');
+        clearInterval(agentInterval);
         clearInterval(healthCheck);
         await browser.close();
         process.exit(0);

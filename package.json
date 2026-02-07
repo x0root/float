@@ -6,6 +6,7 @@
 		"dev": "concurrently \"vite dev\" \"cross-env WEBVM_URL=http://localhost:5173 npm run headless\"",
 		"build": "vite build",
 		"preview": "concurrently \"vite preview\" \"cross-env WEBVM_URL=http://localhost:4173 npm run headless\"",
+		"preview:server": "vite preview",
 		"headless": "node scripts/headless-webvm.js",
 		"headless:visible": "cross-env HEADLESS=false node scripts/headless-webvm.js"
 	},

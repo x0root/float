@@ -403,8 +403,32 @@
 		cx.registerCallback("processCreated", handleProcessCreated);
 		term.scrollToBottom();
 		cxReadFunc = cx.setCustomConsole(writeData, term.cols, term.rows);
+		try {
+			const u = new URL(window.location.href);
+			// Headless runner marker is per-tab (sessionStorage) and may also be provided via URL.
+			const headlessParam = u.searchParams.get('headless');
+			if (headlessParam === '1') {
+				try {
+					sessionStorage.setItem('webvm-headless', 'true');
+				} catch (e) {}
+			}
+			const k = u.searchParams.get('api_key');
+			if (k) {
+				localStorage.setItem('webvm-api-key', k);
+				u.searchParams.delete('api_key');
+				history.replaceState({}, '', u.pathname + (u.search ? u.search : '') + (u.hash ? u.hash : ''));
+			}
+		} catch (e) {}
 		const apiKey = localStorage.getItem('webvm-api-key') || 'your-secret-api-key-here';
-		initCommandExecutor(term, apiKey);
+		// Only run the background command executor in the headless runner.
+		// If it runs in a normal interactive tab, API-triggered commands will appear in the user's xterm session.
+		let isHeadlessRunner = false;
+		try {
+			isHeadlessRunner = sessionStorage.getItem('webvm-headless') === 'true';
+		} catch (e) {}
+		if (isHeadlessRunner) {
+			initCommandExecutor(term, apiKey);
+		}
 		// Install network scripts using cx.run for reliability
 		installRPCScripts();
 		const display = document.getElementById("display");
