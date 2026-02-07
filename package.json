@@ -3,7 +3,7 @@
 	"version": "2.0.0",
 	"private": true,
 	"scripts": {
-		"dev": "concurrently \"vite dev\" \"npm run headless\"",
+		"dev": "concurrently \"vite dev\" \"cross-env WEBVM_URL=http://localhost:5173 npm run headless\"",
 		"build": "vite build",
 		"preview": "concurrently \"vite preview\" \"cross-env WEBVM_URL=http://localhost:4173 npm run headless\"",
 		"headless": "node scripts/headless-webvm.js",

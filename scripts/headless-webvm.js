@@ -11,9 +11,37 @@
  */
 
 import puppeteer from 'puppeteer';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const WEBVM_URL = process.env.WEBVM_URL || 'http://localhost:5173';
 const HEADLESS = process.env.HEADLESS !== 'false';
+
+function readDotEnvApiKey() {
+	try {
+		const envPath = path.resolve(process.cwd(), '.env');
+		if (!fs.existsSync(envPath)) return null;
+		const raw = fs.readFileSync(envPath, 'utf8');
+		for (const line of raw.split(/\r?\n/)) {
+			const trimmed = line.trim();
+			if (!trimmed || trimmed.startsWith('#')) continue;
+			const idx = trimmed.indexOf('=');
+			if (idx === -1) continue;
+			const key = trimmed.slice(0, idx).trim();
+			if (key !== 'API_KEY') continue;
+			let value = trimmed.slice(idx + 1).trim();
+			if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+				value = value.slice(1, -1);
+			}
+			return value || null;
+		}
+	} catch {
+		return null;
+	}
+	return null;
+}
+
+const API_KEY = process.env.API_KEY || readDotEnvApiKey() || 'your-secret-api-key-here';
 
 async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -39,6 +67,15 @@ async function main() {
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
+
+    // Ensure CommandExecutor has the API key before any app scripts run
+    await page.evaluateOnNewDocument((key) => {
+        try {
+            localStorage.setItem('webvm-api-key', key);
+        } catch {
+            // ignore
+        }
+    }, API_KEY);
 
     // Track page errors but don't crash
     page.on('console', msg => {
@@ -80,6 +117,8 @@ async function main() {
         await browser.close();
         process.exit(1);
     }
+
+    console.log('🔑 API key configured');
 
     // Wait for terminal with retry
     console.log('⏳ Waiting for terminal to initialize...');
@@ -136,7 +175,7 @@ async function main() {
     console.log('');
     console.log('  Test with:');
     const testUrl = WEBVM_URL.replace(/\/$/, '');
-    console.log(`    curl -X POST "${testUrl}/api?api_key=your-secret-api-key-here" \\`);
+    console.log(`    curl -X POST "${testUrl}/api?api_key=${API_KEY}" \\`);
     console.log(`      -H "Content-Type: application/json" -d '{"cmd":"whoami"}'`);
     console.log('');
     console.log('  Press Ctrl+C to stop.');
