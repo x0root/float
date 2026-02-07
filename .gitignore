@@ -10,3 +10,6 @@ build/
 # Vite caches/build output
 dist/
 .vite/
+
+# Vite timestamp artifacts
+vite.config.js.timestamp-*.mjs
