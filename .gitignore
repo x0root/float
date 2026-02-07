@@ -3,3 +3,10 @@
 pnpm-lock.yaml
 build/
 .vercel/
+
+# Per-VM logs (generated at runtime)
+.webvm-logs/
+
+# Vite caches/build output
+dist/
+.vite/
