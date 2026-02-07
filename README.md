@@ -14,7 +14,7 @@ Run Linux containers in your browser via WebAssembly. Debian runs client-side; o
 
 Float is an open-source, client-side containerization platform that runs full Linux environments directly in the browser through WebAssembly. Built on CheerpX's x86 emulation and JIT engine, it enables developers to spin up multiple isolated Debian containers from a single disk image, all running entirely on the client side without backend infrastructure.
 
-With its container management API and Docker-inspired orchestration, Float lets developers programmatically control, connect to, and manage containers through a familiar interface, while offloading compute costs from servers to users' browsers. The platform is deployable on any static host like Vercel or localhost, with networking that leverages the host environment for internet access, making it a zero-backend solution for running Linux containers at scale.
+With its container management API and Docker-inspired orchestration, Float lets developers programmatically control, connect to, and manage containers through a familiar interface, while offloading compute costs from servers to users' browsers. 
 
 ---
 
