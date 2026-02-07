@@ -148,6 +148,21 @@ Each per-VM headless runner writes logs to:
 
 This is the first place to check if commands are stuck or the runner fails to start.
 
+### Serverless (Vercel) limitation
+
+The **Manager dashboard VM spawning feature** is designed for a persistent Node.js server.
+
+On serverless platforms like **Vercel**, the manager will not be able to create or reliably “detect” VMs because:
+
+- **No long-running child processes**: the manager spawns per-VM processes (a `vite preview` server and a Puppeteer headless runner). Serverless functions cannot keep these running.
+- **No shared in-memory state**: the VM registry is stored in-memory, which does not persist across serverless invocations/cold starts.
+- **No dynamic localhost ports**: per-VM URLs are `http://localhost:<port>` and serverless platforms do not expose arbitrary ports.
+
+#### Recommended deployment options
+
+- **Local / VPS / persistent VM**: run the manager on a machine that can spawn and keep processes alive.
+- **Vercel for UI + external runners**: host the UI on Vercel, but run the headless runners and manager on a persistent host and store registry state in an external DB/Redis.
+
 ---
 
 ## Usage Guide
