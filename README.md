@@ -2,6 +2,12 @@
   <img src="logo.png" alt="Float Logo" width="200">
 </p>
 
+![License](https://img.shields.io/badge/license-MIT-blue)
+![WebAssembly](https://img.shields.io/badge/WebAssembly-654FF0?logo=webassembly&logoColor=white)
+![SvelteKit](https://img.shields.io/badge/SvelteKit-FF3E00?logo=svelte&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white)
+![Puppeteer](https://img.shields.io/badge/Puppeteer-40B5A4?logo=puppeteer&logoColor=white)
+
 # Float - Browser-Based Linux Container Platform
 
 Run Linux containers in your browser via WebAssembly. Debian runs client-side; optional server endpoints provide a command API and an HTTP gateway.

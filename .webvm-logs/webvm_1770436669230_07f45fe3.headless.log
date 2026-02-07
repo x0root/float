@@ -1,0 +1,174 @@
+🚀 Starting Headless WebVM...
+   URL: http://localhost:58622
+   Mode: Headless
+
+📡 Navigating to WebVM...
+✅ Page loaded successfully
+🔑 API key configured
+⏳ Waiting for terminal to initialize...
+✅ Terminal element found
+⏳ Waiting for CheerpX VM to boot (this may take 30-60 seconds)...
+✅ VM appears to be ready (bash prompt detected)
+
+═══════════════════════════════════════════════════════════
+  🖥️  HEADLESS WEBVM IS RUNNING
+═══════════════════════════════════════════════════════════
+
+  The VM is now running in the background.
+  Commands sent to the API will be executed automatically.
+
+  Test with:
+    curl -X POST "http://localhost:58622/api?api_key=your-secret-api-key-here" \
+      -H "Content-Type: application/json" -d '{"cmd":"whoami"}'
+
+  Press Ctrl+C to stop.
+
+═══════════════════════════════════════════════════════════
+[CommandExecutor] Started polling for commands
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
+[CommandExecutor] Poll error: Failed to fetch
