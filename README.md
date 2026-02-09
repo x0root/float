@@ -8,6 +8,11 @@
 ![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white)
 ![Puppeteer](https://img.shields.io/badge/Puppeteer-40B5A4?logo=puppeteer&logoColor=white)
 
+[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fx0root%2Ffloat)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/x0root/float)
+
+Note: Vercel/serverless deployments can serve the UI, but the Manager VM spawning feature (per-VM child processes/ports) does not work on serverless.
+
 # Float - Browser-Based Linux Container Platform
 
 Run Linux containers in your browser via WebAssembly. Debian runs client-side; optional server endpoints provide a command API and an HTTP gateway.
