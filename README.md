@@ -11,7 +11,7 @@
 [![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fx0root%2Ffloat)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/x0root/float)
 
-Note: Vercel/serverless deployments can serve the UI, but the Manager VM spawning feature (per-VM child processes/ports) does not work on serverless.
+Note: Float runs on Vercel, but you can't create multiple containers/VMs there (the Manager spawns child processes/ports).
 
 # Float - Browser-Based Linux Container Platform
 
