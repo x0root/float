@@ -43,18 +43,15 @@ def gateway_fetch_b64(url):
     # Requests binary content from the host gateway, returned as base64.
     print("__FETCH_B64__" + url + "__ENDFETCH_B64__", flush=True)
     b64 = _read_until_endresponse().strip()
-    # If the gateway returned an error message (text), raise.
+
     if not b64:
         raise RuntimeError("Empty response")
-    # Heuristic: if it looks like HTML, it's not base64 payload.
-    if b64.startswith("<"):
-        raise RuntimeError("Upstream returned HTML")
+
+    if b64.lower().startswith("fetch failed") or b64.lower().startswith("error:") or b64.lower().startswith("unauthorized"):
+        raise RuntimeError(b64)
+
     try:
-        data = base64.b64decode(b64)
-        # If upstream returned an HTML error page, treat as failure.
-        if data.startswith(b'<!') or data.startswith(b'<html') or data.startswith(b'<HTML'):
-            raise RuntimeError("Upstream returned HTML")
-        return data
+        return base64.b64decode(b64)
     except Exception as e:
         raise RuntimeError(f"Failed to decode base64: {e}")
 

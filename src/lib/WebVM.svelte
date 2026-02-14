@@ -141,6 +141,7 @@
 			await cx.run('/bin/bash', ['-c', `
 				echo "${netB64}" | base64 -d > /tmp/net && chmod +x /tmp/net &&
 				printf '#!/bin/sh\nexec /tmp/net curl "$@"\n' > /tmp/curl && chmod +x /tmp/curl &&
+				printf '#!/bin/sh\nexec /tmp/net wget "$@"\n' > /tmp/wget && chmod +x /tmp/wget
 				printf '#!/bin/sh\nexec /tmp/net wget "$@"\n' > /tmp/wget && chmod +x /tmp/wget &&
 				grep -q 'export PATH=/tmp:$PATH' /home/user/.bashrc || echo 'export PATH=/tmp:$PATH' >> /home/user/.bashrc
 			`]);
@@ -425,7 +426,7 @@
 				history.replaceState({}, '', u.pathname + (u.search ? u.search : '') + (u.hash ? u.hash : ''));
 			}
 		} catch (e) {}
-		const apiKey = localStorage.getItem('webvm-api-key') || 'your-secret-api-key-here';
+			const apiKey = localStorage.getItem('webvm-api-key') || 'your-secret-api-key-here';
 		// Only run the background command executor in the headless runner.
 		// If it runs in a normal interactive tab, API-triggered commands will appear in the user's xterm session.
 		let isHeadlessRunner = false;
