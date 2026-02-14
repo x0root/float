@@ -97,8 +97,9 @@
 
 	async function handleFetch(url, opts = {}) {
 		try {
-			const apiKey = localStorage.getItem('webvm-api-key') || 'your-secret-api-key-here';
-			const res = await fetch(`/api/gateway?api_key=${encodeURIComponent(apiKey)}`, {
+			const apiKey = localStorage.getItem('webvm-api-key');
+			const gatewayUrl = apiKey ? `/api/gateway?api_key=${encodeURIComponent(apiKey)}` : '/api/gateway';
+			const res = await fetch(gatewayUrl, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ url: url, method: opts.method || 'GET', responseType: opts.responseType || 'text' })
@@ -136,21 +137,27 @@
 		scriptsInstalling = true;
 		
 		try {
-			// Create unified net gateway script
+			// Create unified net gateway script + curl/wget shims.
 			const netB64 = btoa(NET_GATEWAY_SCRIPT);
-			await cx.run('/bin/bash', ['-c', `echo "${netB64}" | base64 -d > /tmp/net && chmod +x /tmp/net`]);
+			await cx.run('/bin/bash', ['-c', `
+				echo "${netB64}" | base64 -d > /tmp/net && chmod +x /tmp/net &&
+				printf '#!/bin/sh\nexec /tmp/net curl "$@"\n' > /tmp/curl && chmod +x /tmp/curl &&
+				printf '#!/bin/sh\nexec /tmp/net wget "$@"\n' > /tmp/wget && chmod +x /tmp/wget
+			`]);
+
+			// Apply PATH update immediately in the active shell session.
+			term.input('export PATH=/tmp:$PATH\n');
 			
 			if (!netBannerPrinted) {
 				netBannerPrinted = true;
 				term.write('\r\n========================================\r\n');
-				term.write('Network ready! Use these commands:\r\n');
-				term.write('  /tmp/net curl [-o out] <url>\r\n');
+				term.write('Network ready! You can use curl/wget directly:\r\n');
+				term.write('  curl -I google.com\r\n');
+				term.write('  curl -O https://example.com/file.bin\r\n');
+				term.write('  wget -O out.html google.com\r\n');
+				term.write('\r\nCompatibility wrapper also available:\r\n');
+				term.write('  /tmp/net curl [-I|-o out|-O] <url>\r\n');
 				term.write('  /tmp/net wget [-O out] <url>\r\n');
-				term.write('  /tmp/net curl -I <url>\r\n');
-				term.write('\r\nTo make it permanent as root:\r\n');
-				term.write('  su (password: password)\r\n');
-				term.write('  cp /tmp/net /bin/net\r\n');
-				term.write('  Then use: net curl <url>\r\n');
 				term.write('========================================\r\n');
 			}
 			scriptsInstalled = true;
@@ -418,7 +425,7 @@
 				history.replaceState({}, '', u.pathname + (u.search ? u.search : '') + (u.hash ? u.hash : ''));
 			}
 		} catch (e) {}
-		const apiKey = localStorage.getItem('webvm-api-key') || 'your-secret-api-key-here';
+			const apiKey = localStorage.getItem('webvm-api-key') || '';
 		// Only run the background command executor in the headless runner.
 		// If it runs in a normal interactive tab, API-triggered commands will appear in the user's xterm session.
 		let isHeadlessRunner = false;
