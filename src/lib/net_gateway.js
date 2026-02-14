@@ -1,11 +1,19 @@
 // Unified network gateway script - single file for basic network operations
-// Usage: /tmp/net curl <url>  OR  /tmp/net wget <url>
+// Usage: net curl <url>  OR  net wget <url>
 
 export const NET_GATEWAY_SCRIPT = `#!/usr/bin/env python3
 import sys
-import os
-import subprocess
 import base64
+from urllib.parse import urlparse
+
+
+def normalize_url(url):
+    # Accept short forms like "google.com" by defaulting to HTTPS.
+    parsed = urlparse(url)
+    if parsed.scheme:
+        return url
+    return "https://" + url
+
 
 def _read_until_endresponse():
     response = ""
@@ -19,43 +27,54 @@ def _read_until_endresponse():
         response += line
     return response
 
+
+
 def gateway_fetch_text(url):
     print("__FETCH__" + url + "__ENDFETCH__", flush=True)
     return _read_until_endresponse()
+
 
 def gateway_fetch_head(url):
     # Ask the host to perform a HEAD request and return headers as text.
     print("__FETCH_HEAD__" + url + "__ENDFETCH_HEAD__", flush=True)
     return _read_until_endresponse()
 
+
 def gateway_fetch_b64(url):
     # Requests binary content from the host gateway, returned as base64.
     print("__FETCH_B64__" + url + "__ENDFETCH_B64__", flush=True)
     b64 = _read_until_endresponse().strip()
-    # If the gateway returned an error message (text), raise.
+
     if not b64:
         raise RuntimeError("Empty response")
-    # Heuristic: if it looks like HTML, it's not base64 payload.
-    if b64.startswith("<"):
-        raise RuntimeError("Upstream returned HTML")
+
+    if b64.lower().startswith("fetch failed") or b64.lower().startswith("error:") or b64.lower().startswith("unauthorized"):
+        raise RuntimeError(b64)
+
     try:
-        data = base64.b64decode(b64)
-        # If upstream returned an HTML error page, treat as failure.
-        if data.startswith(b'<!') or data.startswith(b'<html') or data.startswith(b'<HTML'):
-            raise RuntimeError("Upstream returned HTML")
-        return data
+        return base64.b64decode(b64)
     except Exception as e:
         raise RuntimeError(f"Failed to decode base64: {e}")
+
+
+def infer_download_filename(url):
+    tail = url.rstrip('/').split('/')[-1]
+    return tail or 'download'
+
 
 def do_curl(args):
     url = None
     output = None
+    output_remote_name = False
     head_only = False
     i = 0
     while i < len(args):
         if args[i] in ("-o", "--output") and i + 1 < len(args):
             output = args[i + 1]
             i += 2
+        elif args[i] in ("-O", "--remote-name"):
+            output_remote_name = True
+            i += 1
         elif args[i] in ("-I", "--head"):
             head_only = True
             i += 1
@@ -66,24 +85,34 @@ def do_curl(args):
             i += 1
         else:
             i += 1
-    
+
     if not url:
-        print("Usage: net curl [-o output] <url>", file=sys.stderr)
+        print("Usage: curl [-I] [-o output|-O] <url>", file=sys.stderr)
         return 1
-    
+
+    url = normalize_url(url)
+
     if head_only:
         content = gateway_fetch_head(url)
         print(content)
         return 0
 
-    content = gateway_fetch_text(url)
-    if output:
-        with open(output, 'w') as f:
+    target = output
+    if output_remote_name:
+        target = infer_download_filename(url)
+
+    if target:
+        content = gateway_fetch_b64(url)
+        with open(target, 'wb') as f:
             f.write(content)
-        print(f"Saved to {output}")
-    else:
-        print(content)
+        if not output_remote_name:
+            print(f"Saved to {target}")
+        return 0
+
+    content = gateway_fetch_text(url)
+    print(content)
     return 0
+
 
 def do_wget(args):
     url = None
@@ -98,28 +127,30 @@ def do_wget(args):
         else:
             url = args[i]
             i += 1
-    
+
     if not url:
-        print("Usage: net wget [-O output] <url>", file=sys.stderr)
+        print("Usage: wget [-O output] <url>", file=sys.stderr)
         return 1
-    
-    content = gateway_fetch_text(url)
-    filename = output or url.split('/')[-1] or 'download'
-    with open(filename, 'w') as f:
+
+    url = normalize_url(url)
+    filename = output or infer_download_filename(url)
+    content = gateway_fetch_b64(url)
+    with open(filename, 'wb') as f:
         f.write(content)
     print(f"Saved to {filename}")
     return 0
 
+
 def main():
     if len(sys.argv) < 2:
         print("Float Network Gateway", file=sys.stderr)
-        print("Usage: net curl [-o output] <url>", file=sys.stderr)
+        print("Usage: net curl [-I] [-o output|-O] <url>", file=sys.stderr)
         print("       net wget [-O output] <url>", file=sys.stderr)
         return 1
-    
+
     cmd = sys.argv[1]
     args = sys.argv[2:]
-    
+
     if cmd == "curl":
         return do_curl(args)
     elif cmd == "wget":
@@ -127,6 +158,7 @@ def main():
     else:
         print(f"Unknown command: {cmd}", file=sys.stderr)
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
