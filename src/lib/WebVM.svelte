@@ -55,20 +55,7 @@
 			}
 
 			let displayText = "";
-			const startMarkers = ["__FETCH__", "__FETCH_B64__", "__FETCH_HEAD__"];
-			const getTrailingMarkerPrefixLength = (text) => {
-				let best = 0;
-				for (const marker of startMarkers) {
-					const maxCheck = Math.min(marker.length - 1, text.length);
-					for (let n = maxCheck; n > 0; n--) {
-						if (text.endsWith(marker.slice(0, n))) {
-							best = Math.max(best, n);
-							break;
-						}
-					}
-				}
-				return best;
-			};
+			const MARKER_PREFIX_GUARD = 14;
 
 			while (true) {
 				const startText = fetchMarkerBuffer.indexOf("__FETCH__");
@@ -77,8 +64,7 @@
 				const markerPositions = [startText, startB64, startHead].filter((n) => n !== -1);
 
 				if (markerPositions.length === 0) {
-					const trailingPrefixLen = getTrailingMarkerPrefixLength(fetchMarkerBuffer);
-					const safeLen = fetchMarkerBuffer.length - trailingPrefixLen;
+					const safeLen = Math.max(0, fetchMarkerBuffer.length - MARKER_PREFIX_GUARD);
 					if (safeLen > 0) {
 						displayText += fetchMarkerBuffer.slice(0, safeLen);
 						fetchMarkerBuffer = fetchMarkerBuffer.slice(safeLen);
