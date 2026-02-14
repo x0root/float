@@ -141,9 +141,10 @@
 			await cx.run('/bin/bash', ['-c', `
 				echo "${netB64}" | base64 -d > /tmp/net && chmod +x /tmp/net &&
 				printf '#!/bin/sh\nexec /tmp/net curl "$@"\n' > /tmp/curl && chmod +x /tmp/curl &&
-				printf '#!/bin/sh\nexec /tmp/net wget "$@"\n' > /tmp/wget && chmod +x /tmp/wget
 				printf '#!/bin/sh\nexec /tmp/net wget "$@"\n' > /tmp/wget && chmod +x /tmp/wget &&
-				grep -q 'export PATH=/tmp:$PATH' /home/user/.bashrc || echo 'export PATH=/tmp:$PATH' >> /home/user/.bashrc
+				if [ -r /home/user/.bashrc ] && [ -w /home/user/.bashrc ]; then
+					grep -q 'export PATH=/tmp:$PATH' /home/user/.bashrc || echo 'export PATH=/tmp:$PATH' >> /home/user/.bashrc
+				fi
 			`]);
 
 			// Apply PATH update immediately in the active shell session.
