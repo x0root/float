@@ -49,50 +49,89 @@
 				installRPCScripts();
 			}
 
-			// Fetch Interceptor - robust to marker split across output chunks.
 			fetchMarkerBuffer += str;
-			// Keep the rolling buffer bounded to avoid unbounded growth.
 			if (fetchMarkerBuffer.length > 20000) {
 				fetchMarkerBuffer = fetchMarkerBuffer.slice(-20000);
 			}
+
+			let displayText = "";
+			const startMarkers = ["__FETCH__", "__FETCH_B64__", "__FETCH_HEAD__"];
+			const getTrailingMarkerPrefixLength = (text) => {
+				let best = 0;
+				for (const marker of startMarkers) {
+					const maxCheck = Math.min(marker.length - 1, text.length);
+					for (let n = maxCheck; n > 0; n--) {
+						if (text.endsWith(marker.slice(0, n))) {
+							best = Math.max(best, n);
+							break;
+						}
+					}
+				}
+				return best;
+			};
 
 			while (true) {
 				const startText = fetchMarkerBuffer.indexOf("__FETCH__");
 				const startB64 = fetchMarkerBuffer.indexOf("__FETCH_B64__");
 				const startHead = fetchMarkerBuffer.indexOf("__FETCH_HEAD__");
-				if (startText === -1 && startB64 === -1 && startHead === -1) break;
+				const markerPositions = [startText, startB64, startHead].filter((n) => n !== -1);
+
+				if (markerPositions.length === 0) {
+					const trailingPrefixLen = getTrailingMarkerPrefixLength(fetchMarkerBuffer);
+					const safeLen = fetchMarkerBuffer.length - trailingPrefixLen;
+					if (safeLen > 0) {
+						displayText += fetchMarkerBuffer.slice(0, safeLen);
+						fetchMarkerBuffer = fetchMarkerBuffer.slice(safeLen);
+					}
+					break;
+				}
+
+				const startIdx = Math.min(...markerPositions);
+				if (startIdx > 0) {
+					displayText += fetchMarkerBuffer.slice(0, startIdx);
+					fetchMarkerBuffer = fetchMarkerBuffer.slice(startIdx);
+				}
 
 				let isB64 = false;
-				let startIdx = startText;
 				let endMarker = "__ENDFETCH__";
 				let startMarker = "__FETCH__";
 				let method = 'GET';
 				let returnHeadersOnly = false;
-				if (startHead !== -1 && (startText === -1 || startHead < startText) && (startB64 === -1 || startHead < startB64)) {
-					startIdx = startHead;
+
+				if (fetchMarkerBuffer.startsWith("__FETCH_HEAD__")) {
 					startMarker = "__FETCH_HEAD__";
 					endMarker = "__ENDFETCH_HEAD__";
 					method = 'HEAD';
 					returnHeadersOnly = true;
-				} else if (startB64 !== -1 && (startText === -1 || startB64 < startText)) {
+				} else if (fetchMarkerBuffer.startsWith("__FETCH_B64__")) {
 					isB64 = true;
-					startIdx = startB64;
 					startMarker = "__FETCH_B64__";
 					endMarker = "__ENDFETCH_B64__";
+				} else if (!fetchMarkerBuffer.startsWith("__FETCH__")) {
+					displayText += fetchMarkerBuffer[0];
+					fetchMarkerBuffer = fetchMarkerBuffer.slice(1);
+					continue;
 				}
 
-				const endIdx = fetchMarkerBuffer.indexOf(endMarker, startIdx);
-				if (endIdx === -1) break;
+				const endIdx = fetchMarkerBuffer.indexOf(endMarker, startMarker.length);
+				if (endIdx === -1) {
+					break;
+				}
 
-				const url = fetchMarkerBuffer.slice(startIdx + startMarker.length, endIdx);
+				const rawUrl = fetchMarkerBuffer.slice(startMarker.length, endIdx);
+				const url = rawUrl.trim();
 				console.log("[WebVM] Intercepted fetch request:", url, isB64 ? "(b64)" : (method === 'HEAD' ? "(head)" : "(text)"));
 				handleFetch(url, { responseType: isB64 ? 'arrayBuffer' : 'text', method, returnHeadersOnly });
 
 				fetchMarkerBuffer = fetchMarkerBuffer.slice(endIdx + endMarker.length);
 			}
-		} catch (e) {}
 
-		term.write(new Uint8Array(buf));
+			if (displayText) {
+				term.write(displayText);
+			}
+		} catch (e) {
+			term.write(new Uint8Array(buf));
+		}
 	}
 
 	async function handleFetch(url, opts = {}) {
@@ -104,6 +143,15 @@
 				body: JSON.stringify({ url: url, method: opts.method || 'GET', responseType: opts.responseType || 'text' })
 			});
 			const data = await res.json();
+
+			if (!res.ok && data?.error) {
+				if (res.status === 401) {
+					term.input("Unauthorized: Invalid API Key. Open Float with ?api_key=YOUR_KEY or update localStorage webvm-api-key.__ENDRESPONSE__\n");
+					return;
+				}
+				term.input((data.error || 'Gateway error') + "__ENDRESPONSE__\n");
+				return;
+			}
 
 			if (opts.responseType === 'arrayBuffer') {
 				const content = data.data_b64 || data.error || "";
@@ -141,9 +189,10 @@
 			await cx.run('/bin/bash', ['-c', `
 				echo "${netB64}" | base64 -d > /tmp/net && chmod +x /tmp/net &&
 				printf '#!/bin/sh\nexec /tmp/net curl "$@"\n' > /tmp/curl && chmod +x /tmp/curl &&
-				printf '#!/bin/sh\nexec /tmp/net wget "$@"\n' > /tmp/wget && chmod +x /tmp/wget
 				printf '#!/bin/sh\nexec /tmp/net wget "$@"\n' > /tmp/wget && chmod +x /tmp/wget &&
-				grep -q 'export PATH=/tmp:$PATH' /home/user/.bashrc || echo 'export PATH=/tmp:$PATH' >> /home/user/.bashrc
+				if [ -r /home/user/.bashrc ] && [ -w /home/user/.bashrc ]; then
+					grep -q 'export PATH=/tmp:$PATH' /home/user/.bashrc || echo 'export PATH=/tmp:$PATH' >> /home/user/.bashrc
+				fi
 			`]);
 
 			// Apply PATH update immediately in the active shell session.
