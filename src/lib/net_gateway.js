@@ -28,7 +28,6 @@ def _read_until_endresponse():
     return response
 
 
-
 def gateway_fetch_text(url):
     print("__FETCH__" + url + "__ENDFETCH__", flush=True)
     return _read_until_endresponse()
